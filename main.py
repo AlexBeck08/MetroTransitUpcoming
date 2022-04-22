@@ -8,8 +8,8 @@ from adafruit_epd.epd import Adafruit_EPD
 from adafruit_epd.ssd1680 import Adafruit_SSD1680
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
-start = time.time()
 
+# setting up e-ink bonnet
 spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
 ecs = digitalio.DigitalInOut(board.CE0)
 dc = digitalio.DigitalInOut(board.D22)
@@ -27,7 +27,9 @@ BLACK = (0, 0, 0)
 
 display.rotation = 1
 
+# which stops to be used, these can be found at https://www.metrotransit.org/nextrip or on Google Maps by clicking on stop
 Stops = ('170', '20048', '16839', '16837')
+
 
 def getAPI(stopID):
     url = 'https://svc.metrotransit.org/NexTrip/'
@@ -53,6 +55,8 @@ def updateList(rawList):
 def update_display(updatedList):
     response = getAPI(Stops)
     updatedList = updateList(response)
+
+    #to filter out the exact route and direction I wanted as there are multiple routes that stop at each stop
     NB = updateList(list(filter(lambda c: c['RouteDirection'] == 'NB' and c['Route'] == '4', response)))
     SB = updateList(list(filter(lambda c: c['RouteDirection'] == 'SB' and c['Route'] == '4', response)))
     EB = updateList(list(filter(lambda c: c['RouteDirection'] == 'EB' and c['Route'] == '21', response)))
@@ -72,19 +76,20 @@ def update_display(updatedList):
     now = datetime.now()
     timeText = now.strftime('%I:%M').lstrip('0').replace(' 0', ' ')
     
-    #draw time
+    #draw time and location
     (font_width, font_height) = small_font.getsize(timeText)
     draw.text((display.width - font_width -3, 5), timeText, font = small_font, fill = BLACK)
     (font_width, font_height) = small_font.getsize('Lake & Lyndale')
     draw.text((display.width - font_width -105, 5), 'Lake & Lyndale', font = small_font, fill = BLACK)
 
-
+    # draw route
     route_multiplier = 4
     for route in busRoutes:
         (font_width, font_height) = large_font.getsize(route)
         draw.text((5, display.height - font_height * route_multiplier), route, font=large_font, fill=BLACK)
         route_multiplier -= 1
 
+    #draw times
     time_multiplier = 4.7
     for time in busTimes:
         (font_width, font_height) = medium_font.getsize(time)
@@ -93,7 +98,8 @@ def update_display(updatedList):
    
     display.image(image)
     display.display()
-                                                   
+    
+    # run every 60 seconds                                               
 while True:
     response = getAPI(All_Stops)
     updatedList = updateList(response)
@@ -102,3 +108,5 @@ while True:
     else:
         pass
     time.sleep(60)
+
+    # set up a cron job to run it every morning and kill it every night
