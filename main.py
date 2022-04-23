@@ -30,7 +30,6 @@ display.rotation = 1
 # which stops to be used, these can be found at https://www.metrotransit.org/nextrip or on Google Maps by clicking on stop
 Stops = ('170', '20048', '16839', '16837')
 
-
 def getAPI(stopID):
     url = 'https://svc.metrotransit.org/NexTrip/'
     global response
@@ -101,7 +100,7 @@ def update_display(updatedList):
     
     # run every 60 seconds                                               
 while True:
-    response = getAPI(All_Stops)
+    response = getAPI(Stops)
     updatedList = updateList(response)
     if len(updatedList) >0:
         update_display(updatedList)
